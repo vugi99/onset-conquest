@@ -4,6 +4,7 @@
 
 #### Informations
 * In this gamemode you need to capture the flags. The first team at 0 points will loose
+* Maps located in server/maps.lua
 
 #### Models
 * [Sherman](https://sketchfab.com/3d-models/sherman-00ec6397c1634430a828c22101abfad5) by [Daniel Campos](https://sketchfab.com/danielpinhocampos)

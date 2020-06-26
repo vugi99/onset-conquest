@@ -2,7 +2,7 @@ reload_time_ms = 3000
 sync_interval_ms = 300
 damage_on_vehicles = 1250
 
-replace_model_start = 43 -- replace_model_start to replace_model_start+3*number_of_tanks will be replaced
+replace_model_start = 111112 -- replace_model_start to replace_model_start+3*number_of_tanks will be replaced
 
 tanks = {}
 

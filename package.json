@@ -1,7 +1,7 @@
 {
 	"author": "Voltaism",
-	"version": "0.2",
-        "onset_build": "1.1.0",
+	"version": "0.3",
+        "onset_build": "1.2.1",
         "server_scripts": [
                 "tank/tanks_config.lua",
                 "config.lua",

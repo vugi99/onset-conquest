@@ -61,8 +61,10 @@ function tank_timer(bool)
     end
 end
 
-AddEvent("OnPlayerLeaveVehicle",function()
-    tank_timer(false)
+AddEvent("OnPlayerLeaveVehicle", function(ply, veh, seat)
+    if ply == GetPlayerId() then
+        tank_timer(false)
+    end
 end)
 
 function reverse_angle(angle)

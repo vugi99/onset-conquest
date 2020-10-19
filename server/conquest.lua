@@ -15,6 +15,14 @@ local flags = {}
 local capturingplayers = {}
 local invincible_players = {}
 
+local function table_count(tbl)
+   local nb = 0
+   for k, v in pairs(tbl) do
+      nb = nb + 1
+   end
+   return nb
+end
+
 function changemap(new_start)
    if not new_start then
       local nbwon = 0
@@ -27,7 +35,7 @@ function changemap(new_start)
          CallRemoteEvent(v,"conquest_win",nbwon)
       end
    end
-   if curmap == #maps then
+   if curmap == table_count(maps) then
       curmap = 1
    else
       curmap = curmap + 1
@@ -35,7 +43,7 @@ function changemap(new_start)
    team1points = startpoints+GetPlayerCount()*startpoints_added_per_player
    team2points = startpoints+GetPlayerCount()*startpoints_added_per_player
    flags = {}
-   for i,v in ipairs(maps[curmap]) do 
+   for i,v in ipairs(maps[curmap]) do
       if i > 2 then
          local flagtable = {}
          flagtable["captured"] = 0
@@ -62,10 +70,10 @@ function changemap(new_start)
    local teamselected = 1
    teams[1] = {}
    teams[2] = {}
-   for i,v in ipairs(GetAllPlayers()) do
+   for i, v in ipairs(GetAllPlayers()) do
       SetPlayerSpawnLocation(v, maps[curmap][teamselected][1], maps[curmap][teamselected][2], maps[curmap][teamselected][3], maps[curmap][teamselected][4])
-      table.insert(teams[teamselected],v)
-      CallRemoteEvent(v,"Map_loaded",maps[curmap],teamselected,team1points,team2points,flags,#teams[1],#teams[2],distance2d_flag_capture)
+      table.insert(teams[teamselected], v)
+      CallRemoteEvent(v, "Map_loaded", maps[curmap], teamselected, team1points, team2points, flags)
       if teamselected == 2 then
          SetPlayerNetworkedClothingPreset(v,clothes_team2)
          teamselected = 1
@@ -75,12 +83,15 @@ function changemap(new_start)
       end
       SetPlayerHealth(v, 0)
    end
+   for i, v in ipairs(GetAllPlayers()) do
+      CallRemoteEvent(v, "Update_nb_players", table_count(teams[1]), table_count(teams[2]))
+   end
    started = true
 end
 
 function jointeam(ply)
    local teamselected = 0
-   if #teams[1] <= #teams[2] then
+   if table_count(teams[1]) <= table_count(teams[2]) then
       teamselected = 1
       SetPlayerNetworkedClothingPreset(ply,clothes_team1)
    else
@@ -89,11 +100,9 @@ function jointeam(ply)
    end
    SetPlayerSpawnLocation(ply, maps[curmap][teamselected][1], maps[curmap][teamselected][2], maps[curmap][teamselected][3], maps[curmap][teamselected][4])
    table.insert(teams[teamselected],ply)
-   CallRemoteEvent(ply,"Map_loaded",maps[curmap],teamselected,team1points,team2points,flags,#teams[1],#teams[2],distance2d_flag_capture)
-   for k,v in ipairs(GetAllPlayers()) do
-      if ply ~= v then
-         CallRemoteEvent(v,"Update_nb_players",#teams[1],#teams[2])
-      end
+   CallRemoteEvent(ply,"Map_loaded",maps[curmap], teamselected, team1points, team2points, flags)
+   for k, v in ipairs(GetAllPlayers()) do
+      CallRemoteEvent(v,"Update_nb_players", table_count(teams[1]), table_count(teams[2]))
    end
 end
 
@@ -129,10 +138,10 @@ AddEvent("OnPlayerQuit",function(ply)
    end
    for k,v in ipairs(GetAllPlayers()) do
       if ply ~= v then
-         CallRemoteEvent(v,"Update_nb_players",#teams[1],#teams[2])
+         CallRemoteEvent(v, "Update_nb_players", table_count(teams[1]), table_count(teams[2]))
       end
    end
-   if (#teams[1] == 0 and #teams[2] == 0) then
+   if (table_count(teams[1]) == 0 and table_count(teams[2]) == 0) then
       started = false
    end
 end)
@@ -165,7 +174,7 @@ if dev then
        if cteam then
          SetPlayerSpawnLocation(ply, maps[curmap][cteam][1], maps[curmap][cteam][2], maps[curmap][cteam][3], maps[curmap][cteam][4])
          table.insert(teams[cteam],ply)
-         CallRemoteEvent(ply,"Map_loaded",maps[curmap],cteam,team1points,team2points,flags,#teams[1],#teams[2],distance2d_flag_capture)
+         CallRemoteEvent(ply,"Map_loaded",maps[curmap],cteam,team1points,team2points,flags)
          SetPlayerHealth(ply, 0)
        end
    end)
@@ -409,7 +418,7 @@ AddEvent("OnPlayerSpawn",function(ply)
       tbl.ply = ply
       tbl.numb = 0
       table.insert(invincible_players,tbl)
-      index = #invincible_players
+      index = table_count(invincible_players)
    end
    SetPlayerPropertyValue(ply, "conquest_invincible", true,false)
    AddPlayerChat(ply,"You are invincible for " .. tostring(15000/1000) .. " seconds")
@@ -425,8 +434,8 @@ AddEvent("OnPlayerSpawn",function(ply)
    end)
 end)
 
-AddEvent("OnPlayerDeath",function(ply,killer)
-    for i,v in ipairs(GetAllPlayers()) do
-       CallRemoteEvent(v,"OnPlayerDeathConquest",ply,killer,GetPlayerName(ply),GetPlayerName(killer))
+AddEvent("OnPlayerDeath",function(ply, killer)
+    for i, v in ipairs(GetAllPlayers()) do
+       CallRemoteEvent(v, "OnPlayerDeathConquest", ply, killer, GetPlayerName(ply), GetPlayerName(killer))
     end
 end)

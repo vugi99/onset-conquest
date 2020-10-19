@@ -16,7 +16,15 @@ local team2plynbbox = nil
 
 local pointsboxs = nil
 
-function create_zone_flag(v,size_zone)
+local function table_last_count(tbl)
+    local nb = 0
+    for i, v in ipairs(tbl) do
+       nb = nb + 1
+    end
+    return nb
+ end
+
+function create_zone_flag(v, size_zone)
     zonemodel = GetWorld():SpawnActor(AStaticMeshActor.Class(), FVector(v[1], v[2], v[3]), FRotator(0, 0, 0))
     zonemodel:GetStaticMeshComponent():SetMobility(EComponentMobility.Movable)
     zonemodel:GetStaticMeshComponent():SetStaticMesh(UStaticMesh.LoadFromAsset("/flag_zone/zone"))
@@ -42,7 +50,7 @@ function create_flag_part(v,model_path,sizex,sizey,sizez)
     return flag_part
 end
 
-AddRemoteEvent("Map_loaded",function(maptbl,team,points1,points2,flagtbl,plynb1,plynb2,size_zone)
+AddRemoteEvent("Map_loaded",function(maptbl, team, points1, points2, flagtbl)
     myteam = team
     map = maptbl
     for i,v in ipairs (waypoints) do
@@ -65,7 +73,7 @@ AddRemoteEvent("Map_loaded",function(maptbl,team,points1,points2,flagtbl,plynb1,
     for i,v in ipairs(map) do 
         if i > 2 then
             table.insert(waypoints,CreateWaypoint(v[1], v[2], v[3], tostring(i-2)))
-            create_zone_flag(v,size_zone)
+            create_zone_flag(v, distance2d_flag_capture)
             table.insert(flagmodels,create_flag_part(v,"/flag/sandbag",0.25,0.25,0.25))
             table.insert(flagmodels,create_flag_part(v,"/flag/drapeau_base",0.5,0.5,1))
             local tbl_square = {}
@@ -107,13 +115,6 @@ AddRemoteEvent("Map_loaded",function(maptbl,team,points1,points2,flagtbl,plynb1,
         SetTextBoxText(team1pointsbox, "Team 1 points : " .. points1)
         SetTextBoxText(team2pointsbox, "Team 2 points : " .. points2)
      end
-    if (not team1plynbbox and not team2plynbbox) then
-        team1plynbbox = CreateTextBox(ScreenX/2-200, 60, "Team 1 players : " .. plynb1, "left")
-        team2plynbbox = CreateTextBox(ScreenX/2+300, 60, "Team 2 players : " .. plynb2, "left")
-    else
-        SetTextBoxText(team1plynbbox, "Team 1 players : " .. plynb1)
-        SetTextBoxText(team2plynbbox, "Team 2 players : " .. plynb2)
-    end
 end)
 
 function check_weaps_timer()
@@ -123,51 +124,54 @@ function check_weaps_timer()
 end
 
 AddEvent("OnPackageStart",function()
+    local ScreenX, ScreenY = GetScreenSize()
+    team1plynbbox = CreateTextBox(ScreenX/2-200, 60, "Team 1 players : " .. "...", "left")
+    team2plynbbox = CreateTextBox(ScreenX/2+300, 60, "Team 2 players : " .. "...", "left")
     CreateTimer(check_weaps_timer,1000)
 end)
 
 AddRemoteEvent("Update_ui",function(t1points,t2points,flagtbl)
     if team1pointsbox then
-    SetTextBoxText(team1pointsbox, "Team 1 points : " .. t1points)
-    SetTextBoxText(team2pointsbox, "Team 2 points : " .. t2points)
-    for i,v in ipairs(flagtbl) do 
-        local txt = ""
-        if v["captured"] == 0 then
-            txt = " : neutral"
-            if top_flags_models[i].id ~= 0 then
-                top_flags_models[i].id = 0
-                top_flags_models[i].obj:Destroy()
-                top_flags_models[i].obj = create_flag_part(top_flags_models[i].pos,"/flag/drapeau_carre_blanc",1,1,1)
+        SetTextBoxText(team1pointsbox, "Team 1 points : " .. t1points)
+        SetTextBoxText(team2pointsbox, "Team 2 points : " .. t2points)
+        for i,v in ipairs(flagtbl) do 
+            local txt = ""
+            if v["captured"] == 0 then
+                txt = " : neutral"
+                if top_flags_models[i].id ~= 0 then
+                    top_flags_models[i].id = 0
+                    top_flags_models[i].obj:Destroy()
+                    top_flags_models[i].obj = create_flag_part(top_flags_models[i].pos,"/flag/drapeau_carre_blanc",1,1,1)
+                end
+            elseif v["captured"] ~= myteam then
+                txt = " : enemy"
+                if top_flags_models[i].id ~= 2 then
+                    top_flags_models[i].id = 2
+                    top_flags_models[i].obj:Destroy()
+                    top_flags_models[i].obj = create_flag_part(top_flags_models[i].pos,"/flag/drapeau_carre_rouge",1,1,1)
+                end
+            else
+                txt = " : allied"
+                if top_flags_models[i].id ~= 1 then
+                    top_flags_models[i].id = 1
+                    top_flags_models[i].obj:Destroy()
+                    top_flags_models[i].obj = create_flag_part(top_flags_models[i].pos,"/flag/drapeau_carre_bleu",1,1,1)
+                end
             end
-         elseif v["captured"] ~= myteam then
-            txt = " : enemy"
-            if top_flags_models[i].id ~= 2 then
-                top_flags_models[i].id = 2
-                top_flags_models[i].obj:Destroy()
-                top_flags_models[i].obj = create_flag_part(top_flags_models[i].pos,"/flag/drapeau_carre_rouge",1,1,1)
+            local txtperc = tostring(v["percentage"]) .. "%"
+            if v["percentage"]==0 then
+                txtperc = ""
             end
-         else
-            txt = " : allied"
-            if top_flags_models[i].id ~= 1 then
-                top_flags_models[i].id = 1
-                top_flags_models[i].obj:Destroy()
-                top_flags_models[i].obj = create_flag_part(top_flags_models[i].pos,"/flag/drapeau_carre_bleu",1,1,1)
-            end
-         end
-         local txtperc = tostring(v["percentage"]) .. "%"
-         if v["percentage"]==0 then
-             txtperc = ""
-         end
-         SetTextBoxText(pointsboxs[i], "flag " .. tostring(i) .. txt .. " " .. txtperc)
+            SetTextBoxText(pointsboxs[i], "flag " .. tostring(i) .. txt .. " " .. txtperc)
+        end
+    else
+        AddPlayerChat("Please rejoin")
     end
-else
-    AddPlayerChat("Please rejoin")
-end
 end)
 
 CreateTextBox(5, 450, "Version " .. version, "left")
 
-AddRemoteEvent("Update_nb_players",function(t1nb,t2nb)
+AddRemoteEvent("Update_nb_players",function(t1nb, t2nb)
     SetTextBoxText(team1plynbbox, "Team 1 players : " .. t1nb)
     SetTextBoxText(team2plynbbox, "Team 2 players : " .. t2nb)
 end)
@@ -182,14 +186,14 @@ AddRemoteEvent("conquest_win",function(nb)
        text = "No team won..."
     end
     local ScreenX,ScreenY = GetScreenSize()
-    local winbox = CreateTextBox(ScreenX/2+75, ScreenY/2-ScreenY/4, text)
+    local winbox = CreateTextBox(ScreenX/2, ScreenY/2-ScreenY/4, text)
     Delay(time_win_label_ms,function()
         DestroyTextBox(winbox)
     end)
 end)
 
 local counter = 0
-AddRemoteEvent("OnPlayerDeathConquest",function(ply,killer,plyname,killername)
+AddRemoteEvent("OnPlayerDeathConquest", function(ply, killer, plyname, killername)
     local killtext = nil
     if (not ply and not killer) then
        killtext = "ERROR"
@@ -199,33 +203,33 @@ AddRemoteEvent("OnPlayerDeathConquest",function(ply,killer,plyname,killername)
         killtext = killername .. " killed " .. plyname
     end
     if killtext then
-         local ScreenX,ScreenY = GetScreenSize()
-         local textbox = CreateTextBox(ScreenX, 220, killtext)
+         local ScreenX, ScreenY = GetScreenSize()
+         local textbox = CreateTextBox(ScreenX - 200, 220, killtext, "left")
          local count = 20
          local interval = 10
          local addedy = 30
          local tbl = {}
          tbl.box = textbox
-         tbl.x = ScreenX
+         tbl.x = ScreenX - 200
          tbl.y = 220
          tbl.text = killtext
          tbl.id = counter
          local id = counter
          counter = counter + 1
-         table.insert(kills_textboxs,tbl)
+         table.insert(kills_textboxs, tbl)
          CreateCountTimer(function()
-            for i,v in ipairs(kills_textboxs) do
+            for i, v in ipairs(kills_textboxs) do
                 if v.id ~= id then
                    DestroyTextBox(v.box)
-                   local textbox = CreateTextBox(v.x,math.floor((v.y + addedy/count)+0.5), v.text)
+                   local textbox = CreateTextBox(v.x, math.floor((v.y + addedy/count)+0.5), v.text, "left")
                    v.box = textbox
                    v.y = v.y + addedy/count
                    --SetTextBoxAlignment(v.box, 0, addedy/count)
                 end
             end
-         end,interval,count)
+         end, interval, count)
          Delay(kill_indicator_show_time_ms,function()
-            for i,v in ipairs(kills_textboxs) do
+            for i, v in ipairs(kills_textboxs) do
                 if v.id == id then
                    DestroyTextBox(v.box)
                    table.remove(kills_textboxs,i)

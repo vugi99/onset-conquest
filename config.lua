@@ -13,5 +13,5 @@ clothes_team2 = 4
 
 --ui
 time_win_label_ms = 20000
-kill_indicator_show_time_ms = 5000
-version = "0.3"
+kill_indicator_show_time_ms = 10000
+version = "0.4"
